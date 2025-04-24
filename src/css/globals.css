@@ -1,0 +1,23 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.status {
+  @apply px-2 py-1 rounded-lg font-semibold text-center inline-block;
+}
+
+.status-confirmed {
+  @apply bg-green-500 text-white;
+}
+
+.status-pending {
+  @apply bg-yellow-500 text-white;
+}
+
+.status-cancelled {
+  @apply bg-red-500 text-white;
+}

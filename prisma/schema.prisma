@@ -1,0 +1,123 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  Admin
+  User
+  Maskapai
+}
+
+enum Status {
+  Pending
+  Confirmed
+  Cancelled
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  uuid      String   @unique @default(uuid())
+  username  String   @unique
+  name      String   @db.VarChar(100)
+  email     String   @unique
+  password  String   @db.VarChar(255)
+  role      Role     @default(User)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // relasi one-to-one dengan tbl_airlines
+  airlines Airlines?
+
+  // relasi one-to-many
+  bookings Booking[]
+}
+
+model Airlines {
+  id        Int      @id @default(autoincrement())
+  uuid      String   @unique @default(uuid())
+  name      String   @db.VarChar(100)
+  logo      String   @db.VarChar(255)
+  userId    Int      @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // relasi one-to-one dengan tbl_user
+  user User @relation(fields: [userId], references: [id])
+
+  // relasi one-to-many dengan tbl_flights = 1 airlines dapat memiliki banyak flights
+  flights Flights[]
+}
+
+model Flights {
+  id                  Int      @id @default(autoincrement())
+  uuid                String   @unique @default(uuid())
+  no_penerbangan      String   @unique
+  kota_keberangkatan  String
+  kota_tujuan         String
+  waktu_keberangkatan DateTime
+  waktu_kedatangan    DateTime
+  harga               Decimal  @db.Decimal(10, 2)
+  kapasitas_kursi     Int
+  kursi_tersedia      Int
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  // relasi one-to-many dengan tbl_bookings
+  bookings Booking[]
+
+  // relasi one-to-many dengan tbl_airlines
+  airlinesId Int
+  airlines   Airlines @relation(fields: [airlinesId], references: [id])
+}
+
+model Booking {
+  id           Int      @id @default(autoincrement())
+  uuid         String   @unique @default(uuid())
+  jumlah_kursi Int
+  total_harga  Decimal  @db.Decimal(10, 2)
+  status       Status   @default(Pending)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // one-to-one dengan tbl_bookings
+  payments Payment?
+
+  // relasi one-to-many dengan tbl_flights
+  flightId Int
+  flight   Flights @relation(fields: [flightId], references: [id])
+
+  // relasi one-to-many dengan tbl_user
+  userId Int
+  user   User @relation(fields: [userId], references: [id])
+}
+
+model Payment {
+  id                Int      @id @default(autoincrement())
+  uuid              String   @unique @default(uuid())
+  payment_method    String
+  jumlah_pembayaran Decimal  @db.Decimal(10, 2)
+  status            Status   @default(Pending)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // relasi one-to-one dengan tbl_bookings
+  bookingId Int     @unique
+  booking   Booking @relation(fields: [bookingId], references: [id])
+}
+
+model BookingActivity {
+  id        Int      @id @default(autoincrement())
+  message   String
+  createdAt DateTime @default(now())
+}
