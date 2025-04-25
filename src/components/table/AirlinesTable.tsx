@@ -1,90 +1,108 @@
-import { IAirlines } from "@/types/airlines";
-import Image from "next/image";
-import React from "react";
-import TempLoader from "../TempLoader";
-import { Edit, Trash } from "lucide-react";
+import {IAirlines} from "@/types/airlines"
+import Image from "next/image"
+import React from "react"
+import TempLoader from "../TempLoader"
+import {Edit, Trash} from 'lucide-react'
+import {
+  TableBase,
+  TableHeader,
+  TableHeaderCell,
+  TableBody,
+  TableRow,
+  TableCell,
+  TableActionCell,
+  ActionButton
+} from "../ui/table-base";
 
 interface IAirlinesTableProps {
-  initialValues: IAirlines[];
-  loading: boolean;
-  onEdit: (selectAirlines: IAirlines) => void;
-  onDelete: (uuid: string) => void;
+  initialValues: IAirlines[]
+  loading: boolean
+  errorMessage: Record<string, string>
+  onEdit: (selectAirlines: IAirlines) => void
+  onDelete: (uuid: string) => void
 }
 
-const AirlinesTable = ({
-  initialValues,
-  loading,
-  onDelete,
-  onEdit,
-}: IAirlinesTableProps) => {
+const AirlinesTable = ({initialValues, loading, errorMessage, onDelete, onEdit}: IAirlinesTableProps) => {
   return (
-    <div className="overflow-x-auto">
-      <table className="min-w-full border border-gray-300 bg-white">
-        <thead>
-          <tr className="bg-gray-200 text-sm leading-normal text-gray-600 uppercase">
-            <th className="px-6 py-3 text-left">No</th>
-            <th className="px-6 py-3 text-left">Logo</th>
-            <th className="px-6 py-3 text-left">Nama</th>
-            <th className="px-6 py-3 text-left">Pemilik</th>
-            <th className="px-6 py-3 text-center">Action</th>
-          </tr>
-        </thead>
-        <tbody className="text-sm font-light text-gray-600">
-          {initialValues &&
-            initialValues.map((item, index) => (
-              <tr
-                className="border-b border-gray-200 hover:bg-gray-100"
-                key={index}
-              >
-                <td className="px-6 py-3 text-left whitespace-nowrap">
-                  {index + 1}
-                </td>
-                <td className="px-6 py-3 text-left">
-                  <Image
-                    src={`/img-airlines/${item.logo}`}
-                    alt={`${item.name}`}
-                    width={40}
-                    height={40}
-                    className="whitespace-nowrap"
-                  />
-                </td>
-                <td className="px-6 py-3 text-left">{item.name}</td>
-                <td className="px-6 py-3 text-left">{item.user.name}</td>
-                <td className="px-6 py-3 text-center flex justify-center items-center gap-x-4">
-                  {/* <button
-                    className="rounded bg-blue-500 px-4 mx-2 py-1 text-white"
-                    onClick={() => onEdit(item)}
-                  >
-                    Edit
-                  </button> */}
-                  {/* <button
-                    className="rounded bg-red-500 mx-2 px-4 py-1 text-white"
-                    onClick={() => onDelete(item.uuid)}
-                  >
-                    Delete
-                  </button> */}
-                  <Edit
-                    width={20}
-                    className="text-blue-500 hover:cursor-pointer"
-                    onClick={() => onEdit(item)}
-                  />
-                  <Trash
-                    width={20}
-                    className="text-red-500 hover:cursor-pointer"
-                    onClick={() => onDelete(item.uuid)}
-                  />
-                </td>
-              </tr>
-            ))}
-        </tbody>
+    <TableBase>
+      <table className="w-full">
+        <TableHeader>
+          <TableHeaderCell>No</TableHeaderCell>
+          <TableHeaderCell>Logo</TableHeaderCell>
+          <TableHeaderCell>Nama</TableHeaderCell>
+          <TableHeaderCell>Pemilik</TableHeaderCell>
+          <TableHeaderCell className="text-center">Action</TableHeaderCell>
+        </TableHeader>
+
+        <TableBody>
+          {!loading && initialValues && initialValues.length > 0 && initialValues.map((item, index) => (
+            <TableRow key={index}>
+              <TableCell className="font-medium">{index + 1}</TableCell>
+              <TableCell>
+                <div
+                  className="relative w-12 h-12 rounded-full overflow-hidden bg-gray-100 dark:bg-gray-700 p-1 border border-gray-200 dark:border-gray-600 shadow-sm">
+                  <div className="absolute inset-0 rounded-full overflow-hidden bg-white">
+                    <Image
+                      src={`/img-airlines/${item.logo}`}
+                      alt={`${item.name}`}
+                      width={48}
+                      height={48}
+                      className="object-contain"
+                    />
+                  </div>
+                </div>
+              </TableCell>
+              <TableCell>
+                <div className="font-medium text-gray-900 dark:text-white">{item.name}</div>
+                <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">Airline
+                  ID: {item.uuid.substring(0, 8)}</div>
+              </TableCell>
+              <TableCell>
+                <div className="flex items-center gap-2">
+                  <div
+                    className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 text-xs font-medium">
+                    {item.user.name.charAt(0).toUpperCase()}
+                  </div>
+                  <span>{item.user.name}</span>
+                </div>
+              </TableCell>
+              <TableActionCell>
+                <ActionButton
+                  icon={<Edit size={18}/>}
+                  label="Edit"
+                  onClick={() => onEdit(item)}
+                  variant="primary"
+                />
+                <ActionButton
+                  icon={<Trash size={18}/>}
+                  label="Delete"
+                  onClick={() => onDelete(item.uuid)}
+                  variant="danger"
+                />
+              </TableActionCell>
+            </TableRow>
+          ))}
+        </TableBody>
       </table>
-      {loading && (
-        <div className="flex justify-center">
-          <TempLoader />
+
+      {!loading && errorMessage.error && (
+        <div className="p-8 text-center">
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-red-100 text-red-500 mb-4">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </div>
+          <p className="text-gray-700 dark:text-gray-300">{errorMessage.error}</p>
         </div>
       )}
-    </div>
-  );
-};
 
-export default AirlinesTable;
+      {loading && (
+        <div className="flex justify-center items-center p-8">
+          <TempLoader/>
+        </div>
+      )}
+    </TableBase>
+  )
+}
+
+export default AirlinesTable

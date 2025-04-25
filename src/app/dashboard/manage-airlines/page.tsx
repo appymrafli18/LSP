@@ -1,13 +1,13 @@
 "use client";
-import { useCallback, useEffect, useState } from "react";
+import {useCallback, useEffect, useState} from "react";
 import LayoutDashboard from "@/components/LayoutDashboard";
 import axios from "axios";
-import { ErrorAxios } from "@/lib/axios-error";
-import toast, { Toaster } from "react-hot-toast";
+import {ErrorAxios} from "@/lib/axios-error";
+import toast, {Toaster} from "react-hot-toast";
 import useMe from "@/store/me";
 import AddAirlines from "@/components/modal/AddAirlines";
 import AirlinesTable from "@/components/table/AirlinesTable";
-import { IAirlines } from "@/types/airlines";
+import {IAirlines} from "@/types/airlines";
 import EditAirlines from "@/components/modal/EditAirlines";
 
 const Page: React.FC = () => {
@@ -17,7 +17,7 @@ const Page: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [isAdd, setIsAdd] = useState<boolean>(false);
   const [isEdit, setIsEdit] = useState<boolean>(false);
-  const { user } = useMe();
+  const {user} = useMe();
 
   const initialData = useCallback(async () => {
     setErrorMessage({});
@@ -28,7 +28,7 @@ const Page: React.FC = () => {
       if (response.status === 200 && response.data.data.length !== 0) {
         setAirlines(response.data.data);
       } else {
-        setErrorMessage({ error: "Tidak memiliki data maskapai" });
+        setErrorMessage({error: "Tidak memiliki data maskapai"});
       }
     } catch (error) {
       const err = ErrorAxios(error);
@@ -36,7 +36,7 @@ const Page: React.FC = () => {
       if (typeof err === "object") {
         setErrorMessage(err as Record<string, string>);
       } else {
-        setErrorMessage({ error: err });
+        setErrorMessage({error: err});
       }
     } finally {
       setLoading(false);
@@ -52,7 +52,7 @@ const Page: React.FC = () => {
     const isConfirm = window.confirm("Anda yakin ingin menghapus?");
 
     if (isConfirm) {
-      console.log({ uuid });
+      console.log({uuid});
 
       try {
         const response = await axios.delete(`/api/airlines/delete/${uuid}`);
@@ -69,7 +69,7 @@ const Page: React.FC = () => {
         if (typeof err === "object") {
           setErrorMessage(err as Record<string, string>);
         } else {
-          setErrorMessage({ error: err });
+          setErrorMessage({error: err});
         }
       }
     }
@@ -82,7 +82,7 @@ const Page: React.FC = () => {
   return (
     <LayoutDashboard>
       <div>
-        <Toaster position="top-right" reverseOrder={false} />
+        <Toaster position="top-right" reverseOrder={false}/>
       </div>
       <div className="p-6">
         <div className="mb-6 flex justify-between items-center">
@@ -99,10 +99,10 @@ const Page: React.FC = () => {
         <AirlinesTable
           initialValues={airlines}
           loading={loading}
+          errorMessage={errorMessage}
           onDelete={handleDelete}
           onEdit={onEdit}
         />
-        {errorMessage && <p className="text-center">{errorMessage.error}</p>}
       </div>
       {isAdd && (
         <AddAirlines

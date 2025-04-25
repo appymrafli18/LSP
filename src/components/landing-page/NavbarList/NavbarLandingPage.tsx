@@ -30,7 +30,7 @@ const NavbarLandingPage = () => {
     }
   };
 
-  if (user) {
+  if (user && user.role !== "User") {
     window.location.href = "/dashboard";
   }
 

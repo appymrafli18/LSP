@@ -12,6 +12,7 @@ interface InputFieldProps extends FormFieldProps {
     | "file"
     | "datetime-local";
   value?: string | number;
+  labelStyle?: string;
   disable?: boolean;
   onChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
   autoComplete?: boolean;
@@ -24,6 +25,7 @@ interface InputFieldProps extends FormFieldProps {
 
 export default function InputField({
                                      label,
+                                     labelStyle,
                                      name,
                                      onChange,
                                      value,
@@ -41,7 +43,7 @@ export default function InputField({
     <div className={`mb-4 ${className}`}>
       <label
         htmlFor={name}
-        className="block text-sm font-medium text-gray-700 mb-1"
+        className={`block text-sm font-medium text-gray-700 mb-1 ${labelStyle}`}
       >
         {label}&nbsp;
         {required && <span className="text-red-500">*</span>}

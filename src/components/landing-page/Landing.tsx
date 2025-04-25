@@ -9,14 +9,14 @@ const Landing = () => {
 
   return (
     <div>
-      <NavbarLandingPage />
+      <NavbarLandingPage/>
       <main className="min-h-screen" id="#">
-        <MainContent />
-        <AboutUs />
-        <ServicesUs />
-        <ContactUs />
+        <MainContent/>
+        <AboutUs/>
+        <ServicesUs/>
+        <ContactUs/>
       </main>
-      <Footer />
+      <Footer/>
     </div>
   );
 };

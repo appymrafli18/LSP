@@ -114,9 +114,9 @@ const airlineServices = {
         return {statusCode: 400, message: "Image is required"};
 
 
-      // if (!fs.existsSync("public/img-airlines")) {
-      //   fs.mkdirSync("public/img-airlines", {recursive: true});
-      // }
+      if (!fs.existsSync("public/img-airlines")) {
+        fs.mkdirSync("public/img-airlines", {recursive: true});
+      }
 
       const filePath = path.resolve("public/img-airlines/", fileName);
       fs.writeFileSync(filePath, Buffer.from(await file.arrayBuffer()));

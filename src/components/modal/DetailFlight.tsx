@@ -1,159 +1,186 @@
-import React from "react";
-import DetailModal from "./DetailModal";
-import { SelectFlight } from "@/types/flight";
-import convertToRupiah from "@/lib/converterRupiah";
-import Image from "next/image";
+"use client"
+
+import type React from "react"
+import DetailModal from "./DetailModal"
+import type {SelectFlight} from "@/types/flight"
+import convertToRupiah from "@/lib/converterRupiah"
+import Image from "next/image"
+import timeArrival from "@/lib/timeArrival"
 
 interface DetailFlightProps {
-  isOpen: boolean;
-  onClose: () => void;
-  flight: SelectFlight;
-  loading?: boolean;
+  isOpen: boolean
+  onClose: () => void
+  flight: SelectFlight
+  loading?: boolean
 }
 
-const DetailFlight: React.FC<DetailFlightProps> = ({
-  isOpen,
-  onClose,
-  flight,
-  loading = false,
-}) => {
+const DetailFlight: React.FC<DetailFlightProps> = ({isOpen, onClose, flight, loading = false}) => {
+  // Calculate flight duration
+  const duration = timeArrival(flight.waktu_keberangkatan, flight.waktu_kedatangan)
+
+  // Format dates for better display
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString)
+    return {
+      time: date.toLocaleTimeString([], {hour: "2-digit", minute: "2-digit"}),
+      date: date.toLocaleDateString([], {weekday: "short", day: "numeric", month: "short", year: "numeric"}),
+      full: date.toLocaleString([], {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+    }
+  }
+
+  const departureDate = formatDate(flight.waktu_keberangkatan)
+  const arrivalDate = formatDate(flight.waktu_kedatangan)
+
+  // Calculate seat availability percentage
+  const availabilityPercentage = Math.round((flight.kursi_tersedia / flight.kapasitas_kursi) * 100)
+  const availabilityColor =
+    availabilityPercentage > 60 ? "bg-green-500" : availabilityPercentage > 30 ? "bg-yellow-500" : "bg-red-500"
+
   return (
-    <DetailModal
-      isOpen={isOpen}
-      onClose={onClose}
-      title="Flight Details"
-      loading={loading}
-    >
-      <div className="space-y-6">
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <p className="text-sm text-gray-500">Flight Number</p>
-            <p className="font-medium text-gray-900">{flight.no_penerbangan}</p>
-          </div>
-          <div>
-            <p className="text-sm text-gray-500">Airlines</p>
-            <div className="flex items-center gap-2">
+    <DetailModal isOpen={isOpen} onClose={onClose} title="Flight Details" loading={loading}>
+      <div className="space-y-8 py-2">
+        {/* Header with airline info */}
+        <div className="flex items-center justify-between pb-4 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex items-center space-x-4">
+            <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded-full">
               <Image
                 src={`/img-airlines/${flight.airlines.logo}`}
-                alt="Logo"
-                className="w-8 h-8 object-contain text-center"
-                width={20}
-                height={20}
+                alt={flight.airlines.name}
+                className="w-12 h-12 object-contain"
+                width={48}
+                height={48}
               />
-              <p className="font-medium text-gray-900">
-                {flight.airlines.name}
-              </p>
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">{flight.airlines.name}</h3>
+              <div className="flex items-center mt-1">
+                <span
+                  className="px-2.5 py-0.5 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs font-medium rounded-full">
+                  {flight.no_penerbangan}
+                </span>
+              </div>
             </div>
           </div>
-          <div>
-            <p className="text-sm text-gray-500">From</p>
-            <p className="font-medium text-gray-900">
-              {flight.kota_keberangkatan}
-            </p>
-          </div>
-          <div>
-            <p className="text-sm text-gray-500">To</p>
-            <p className="font-medium text-gray-900">{flight.kota_tujuan}</p>
-          </div>
-          <div>
-            <p className="text-sm text-gray-500">Departure Time</p>
-            <p className="font-medium text-gray-900">
-              {new Date(flight.waktu_keberangkatan).toLocaleString()}
-            </p>
-          </div>
-          <div>
-            <p className="text-sm text-gray-500">Arrival Time</p>
-            <p className="font-medium text-gray-900">
-              {new Date(flight.waktu_kedatangan).toLocaleString()}
-            </p>
-          </div>
-          <div>
-            <p className="text-sm text-gray-500">Price</p>
-            <p className="font-medium text-gray-900">
+          <div className="text-right">
+            <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
               {convertToRupiah(Number(flight.harga))}
-            </p>
-          </div>
-          <div>
-            <p className="text-sm text-gray-500">Seat Capacity</p>
-            <p className="font-medium text-gray-900">
-              {flight.kapasitas_kursi}
-            </p>
-          </div>
-          <div>
-            <p className="text-sm text-gray-500">Available Seats</p>
-            <p className="font-medium text-gray-900">{flight.kursi_tersedia}</p>
-          </div>
-          <div>
-            <p className="text-sm text-gray-500">Created At</p>
-            <p className="font-medium text-gray-900">
-              {new Date(flight.createdAt).toLocaleString()}
-            </p>
-          </div>
-          <div>
-            <p className="text-sm text-gray-500">Updated At</p>
-            <p className="font-medium text-gray-900">
-              {new Date(flight.updatedAt).toLocaleString()}
-            </p>
+            </div>
+            <div className="text-sm text-gray-500 dark:text-gray-400">per person</div>
           </div>
         </div>
 
-        {/* {flight.bookings && flight.bookings.length > 0 && (
-          <div className="mt-6">
-            <h3 className="font-semibold text-lg mb-3">Bookings</h3>
-            <div className="space-y-3">
-              {flight.bookings.map((booking, index) => (
-                <div key={index}>
-                  <div className="bg-gray-100 p-3 rounded-lg border">
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <p className="text-sm text-gray-500">Passenger Name</p>
-                        <p className="font-medium text-gray-900">
-                          {booking.user?.name}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-500">Email Booking</p>
-                        <p className="font-medium text-gray-900">
-                          {booking.user?.email}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-500">Seats Booked</p>
-                        <p className="font-medium text-gray-900">
-                          {booking.jumlah_kursi}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-500">Total Price</p>
-                        <p className="font-medium text-gray-900">
-                          {convertToRupiah(Number(booking.total_harga))}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-500">Status</p>
-                        <p className="font-medium text-gray-900">
-                          {booking.status}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-500">Booking Date</p>
-                        <p className="font-medium text-gray-900">
-                          {new Date(booking.createdAt).toLocaleString()}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                  {index < flight.bookings.length - 1 && (
-                    <hr className="my-3 border-gray-200" />
-                  )}
-                </div>
-              ))}
+        {/* Flight route visualization */}
+        <div className="relative py-6">
+          <div className="flex justify-between items-start">
+            <div className="text-center">
+              <div className="text-xl font-bold text-gray-900 dark:text-white">{departureDate.time}</div>
+              <div className="text-sm font-medium text-gray-800 dark:text-gray-200">{departureDate.date}</div>
+              <div className="mt-2 text-sm text-gray-600 dark:text-gray-400 max-w-[140px]">
+                {flight.kota_keberangkatan}
+              </div>
+            </div>
+
+            <div className="flex-1 flex flex-col items-center px-4">
+              <div className="text-xs text-gray-500 dark:text-gray-400 mb-2">{duration}</div>
+              <div className="w-full flex items-center">
+                <div className="h-0.5 flex-1 bg-gray-300 dark:bg-gray-600"></div>
+                <div className="mx-2 w-2 h-2 rounded-full bg-gray-400 dark:bg-gray-500"></div>
+                <div className="h-0.5 flex-1 bg-gray-300 dark:bg-gray-600"></div>
+              </div>
+              <div className="text-xs text-gray-500 dark:text-gray-400 mt-2">Direct Flight</div>
+            </div>
+
+            <div className="text-center">
+              <div className="text-xl font-bold text-gray-900 dark:text-white">{arrivalDate.time}</div>
+              <div className="text-sm font-medium text-gray-800 dark:text-gray-200">{arrivalDate.date}</div>
+              <div className="mt-2 text-sm text-gray-600 dark:text-gray-400 max-w-[140px]">{flight.kota_tujuan}</div>
             </div>
           </div>
-        )} */}
+
+          {/* Airplane icon on the path */}
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-6 w-6 text-blue-500 dark:text-blue-400 transform rotate-90"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+            </svg>
+          </div>
+        </div>
+
+        {/* Seat availability */}
+        <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+          <div className="flex justify-between items-center mb-2">
+            <h4 className="font-medium text-gray-700 dark:text-gray-300">Seat Availability</h4>
+            <span
+              className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${availabilityPercentage > 60 ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200" : availabilityPercentage > 30 ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200" : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"}`}
+            >
+              {availabilityPercentage}% Available
+            </span>
+          </div>
+
+          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 mb-2">
+            <div
+              className={`h-2.5 rounded-full ${availabilityColor}`}
+              style={{width: `${availabilityPercentage}%`}}
+            ></div>
+          </div>
+
+          <div className="flex justify-between text-sm">
+            <div>
+              <span className="text-gray-500 dark:text-gray-400">Available: </span>
+              <span className="font-medium text-gray-900 dark:text-white">{flight.kursi_tersedia}</span>
+            </div>
+            <div>
+              <span className="text-gray-500 dark:text-gray-400">Total Capacity: </span>
+              <span className="font-medium text-gray-900 dark:text-white">{flight.kapasitas_kursi}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Flight details in cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
+            <h4 className="font-medium text-gray-700 dark:text-gray-300 mb-3">Departure Details</h4>
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-sm text-gray-500 dark:text-gray-400">Date & Time</span>
+                <span className="text-sm font-medium text-gray-900 dark:text-white">{departureDate.full}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-gray-500 dark:text-gray-400">Location</span>
+                <span className="text-sm font-medium text-gray-900 dark:text-white">{flight.kota_keberangkatan}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
+            <h4 className="font-medium text-gray-700 dark:text-gray-300 mb-3">Arrival Details</h4>
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-sm text-gray-500 dark:text-gray-400">Date & Time</span>
+                <span className="text-sm font-medium text-gray-900 dark:text-white">{arrivalDate.full}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-gray-500 dark:text-gray-400">Location</span>
+                <span className="text-sm font-medium text-gray-900 dark:text-white">{flight.kota_tujuan}</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </DetailModal>
-  );
-};
+  )
+}
 
-export default DetailFlight;
+export default DetailFlight

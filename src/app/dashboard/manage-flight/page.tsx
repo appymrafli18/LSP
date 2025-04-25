@@ -4,11 +4,11 @@ import AddFlight from "@/components/modal/AddFlight";
 import DetailFlight from "@/components/modal/DetailFlight";
 import EditFlight from "@/components/modal/EditFlight";
 import FlightTable from "@/components/table/FlightTable";
-import { ErrorAxios } from "@/lib/axios-error";
-import { FLIGHT, SelectFlight } from "@/types/flight";
+import {ErrorAxios} from "@/lib/axios-error";
+import {FLIGHT, SelectFlight} from "@/types/flight";
 import axios from "axios";
-import { useCallback, useEffect, useState } from "react";
-import toast, { Toaster } from "react-hot-toast";
+import {useCallback, useEffect, useState} from "react";
+import toast, {Toaster} from "react-hot-toast";
 
 const Page: React.FC = () => {
   const [data, setData] = useState<FLIGHT[]>([]);
@@ -27,7 +27,7 @@ const Page: React.FC = () => {
       if (response.data.data.length > 0) {
         setData(response.data.data);
       } else {
-        setErrorMessage({ error: "Tidak memiliki data penerbangan" });
+        setErrorMessage({error: "Flight not found"});
       }
     } catch (error) {
       const err = ErrorAxios(error);
@@ -35,7 +35,7 @@ const Page: React.FC = () => {
       if (typeof err === "object") {
         setErrorMessage(err as Record<string, string>);
       } else {
-        setErrorMessage({ error: err });
+        setErrorMessage({error: err});
       }
     } finally {
       setLoading(false);
@@ -80,7 +80,7 @@ const Page: React.FC = () => {
   return (
     <LayoutDashboard>
       <div className="p-6">
-        <Toaster position="top-right" reverseOrder={false} />
+        <Toaster position="top-right" reverseOrder={false}/>
         <div className="mb-6 flex justify-between items-center">
           <h1 className="text-2xl font-bold">Manage Flights</h1>
           <button
@@ -93,15 +93,13 @@ const Page: React.FC = () => {
         </div>
         <FlightTable
           initialValues={data}
+          errorMessage={errorMessage}
           loading={loading}
           onEdit={onEdit}
           onDelete={onDelete}
           onDetail={onDetail}
         />
 
-        {errorMessage && (
-          <p className="text-center p-4">{errorMessage?.error}</p>
-        )}
         {isAdd && (
           <AddFlight
             isOpen={isAdd}
