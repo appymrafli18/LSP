@@ -3,21 +3,56 @@
 @tailwind utilities;
 
 html {
-  transition: background-color 0.3s ease, color 0.3s ease;
+    transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 .status {
-  @apply px-2 py-1 rounded-lg font-semibold text-center inline-block;
+    @apply px-2 py-1 rounded-lg font-semibold text-center inline-block;
 }
 
 .status-confirmed {
-  @apply bg-green-500 text-white;
+    @apply bg-green-500 text-white;
 }
 
 .status-pending {
-  @apply bg-yellow-500 text-white;
+    @apply bg-yellow-500 text-white;
 }
 
 .status-cancelled {
-  @apply bg-red-500 text-white;
+    @apply bg-red-500 text-white;
+}
+
+@layer utilities {
+    .scrollbar-thin::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .scrollbar-thin::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 10px;
+    }
+
+    .scrollbar-thin::-webkit-scrollbar-thumb {
+        background: #d1d5db;
+        border-radius: 10px;
+    }
+
+    .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+        background: #9ca3af;
+    }
+
+    .animate-fade-in {
+        animation: fadeIn 0.3s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
 }

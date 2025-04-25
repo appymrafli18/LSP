@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { format } from "date-fns";
+import {useEffect, useState} from "react";
+import {format} from "date-fns";
 import axios from "axios";
 
 export default function MyTickets() {
@@ -103,8 +103,7 @@ export default function MyTickets() {
   useEffect(() => {
     axios
       .get("/api/bookings/all")
-      .then((response) => setTicketData(response.data.data))
-      .catch((err) => console.error(err));
+      .then((response) => setTicketData(response.data.data)).catch((error) => console.log(error));
   }, []);
 
   return (
@@ -183,7 +182,7 @@ export default function MyTickets() {
         </div>
 
         {/* No results */}
-        {filteredTickets.length === 0 && (
+        {filteredTickets && filteredTickets.length === 0 && (
           <div className="text-center py-12">
             <svg
               className="mx-auto h-12 w-12 text-gray-400"
@@ -210,7 +209,7 @@ export default function MyTickets() {
 
         {/* Tickets Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredTickets.map((ticket, index) => (
+          {filteredTickets && filteredTickets.length > 0 && filteredTickets.map((ticket, index) => (
             <div
               key={index}
               className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300 border border-gray-100"

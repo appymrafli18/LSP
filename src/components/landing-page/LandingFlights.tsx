@@ -1,116 +1,120 @@
-"use client";
-import { useCallback, useEffect, useState } from "react";
-import axios from "axios";
-import { IAirlines } from "@/types/airlines";
-import { FLIGHT } from "@/types/payment";
-import Image from "next/image";
-import { useRouter, useSearchParams } from "next/navigation";
-import { ErrorAxios } from "@/lib/axios-error";
-import useFlightStore from "@/store/booking";
-import timeArrival from "@/lib/timeArrival";
-import NavbarLandingPage from "./NavbarList/NavbarLandingPage";
+"use client"
+import {useCallback, useEffect, useState} from "react"
+import type React from "react"
+
+import axios from "axios"
+import type {IAirlines} from "@/types/airlines"
+import type {FLIGHT} from "@/types/payment"
+import Image from "next/image"
+import {useRouter, useSearchParams} from "next/navigation"
+import {ErrorAxios} from "@/lib/axios-error"
+import useFlightStore from "@/store/booking"
+import timeArrival from "@/lib/timeArrival"
+import NavbarLandingPage from "./NavbarList/NavbarLandingPage"
 
 interface ISorting {
-  sortPrice?: string;
+  sortPrice?: string
   sortAirlines?: {
-    name: string;
-    id: number;
-  };
+    name: string
+    id: number
+  }
 }
 
 const LandingFlights = () => {
-  const router = useRouter();
-  const { setSelectedFlight } = useFlightStore();
-  const [airlines, setAirlines] = useState<IAirlines[]>([]);
-  const [flights, setFlights] = useState<FLIGHT[]>([]);
-  const [errorMessage, setErrorMessage] = useState<Record<string, string>>();
-  const searchParams = useSearchParams();
-  const [sorting, setSorting] = useState<ISorting>();
+  const router = useRouter()
+  const {setSelectedFlight} = useFlightStore()
+  const [airlines, setAirlines] = useState<IAirlines[]>([])
+  const [flights, setFlights] = useState<FLIGHT[]>([])
+  const [errorMessage, setErrorMessage] = useState<Record<string, string>>()
+  const searchParams = useSearchParams()
+  const [sorting, setSorting] = useState<ISorting>()
+  const [showModal, setShowModal] = useState(true)
 
   const initialValue = async () => {
     try {
-      const resAirlines = await axios.get("/api/airlines/all");
+      const resAirlines = await axios.get("/api/airlines/all")
 
       if (resAirlines.status === 200) {
-        setAirlines(resAirlines.data.data);
+        setAirlines(resAirlines.data.data)
       }
     } catch (error) {
-      console.log(error);
+      console.log(error)
     }
-  };
+  }
 
   const filterFlight = useCallback(async () => {
     try {
-      const from = searchParams.get("from") as string;
-      const to = searchParams.get("to") as string;
-      const tanggal = searchParams.get("tanggal") as string;
+      const from = searchParams.get("from") as string
+      const to = searchParams.get("to") as string
+      const tanggal = searchParams.get("tanggal") as string
 
-      const params = new URLSearchParams();
-      if (from) params.append("departureCity", from);
-      if (to) params.append("destinationCity", to);
-      if (tanggal) params.append("date", tanggal);
-      if (sorting && sorting.sortAirlines)
-        params.append("airlineName", sorting.sortAirlines.name);
-      if (sorting && sorting.sortPrice === "asc")
-        params.append("minPrice", sorting.sortPrice);
-      if (sorting && sorting.sortPrice === "desc")
-        params.append("maxPrice", sorting.sortPrice);
+      const params = new URLSearchParams()
+      if (from) params.append("departureCity", from)
+      if (to) params.append("destinationCity", to)
+      if (tanggal) params.append("date", tanggal)
+      if (sorting && sorting.sortAirlines) params.append("airlineName", sorting.sortAirlines.name)
+      if (sorting && sorting.sortPrice === "asc") params.append("minPrice", sorting.sortPrice)
+      if (sorting && sorting.sortPrice === "desc") params.append("maxPrice", sorting.sortPrice)
 
-      const resFlight = await axios.get(
-        `/api/flights/filter?${params.toString()}`
-      );
+      const resFlight = await axios.get(`/api/flights/filter?${params.toString()}`)
       if (resFlight.status === 200) {
-        console.log({ rf: resFlight.data });
-        setFlights(resFlight.data.data);
+        console.log({rf: resFlight.data})
+        setFlights(resFlight.data.data)
       }
     } catch (error) {
-      const err = ErrorAxios(error);
+      const err = ErrorAxios(error)
       if (typeof err !== "object") {
-        setErrorMessage({ error: err });
+        setErrorMessage({error: err})
       }
     }
-  }, [searchParams, sorting]);
+  }, [searchParams, sorting])
 
   const handleSubmitForm = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+    event.preventDefault()
 
-    const formData = new FormData(event.currentTarget);
-    const from = formData.get("from") as string;
-    const to = formData.get("to") as string;
-    const tanggal = formData.get("tanggal") as string;
+    const formData = new FormData(event.currentTarget)
+    const from = formData.get("from") as string
+    const to = formData.get("to") as string
+    const tanggal = formData.get("tanggal") as string
 
-    const params = new URLSearchParams();
-    if (from) params.append("from", from);
-    if (to) params.append("to", to);
-    if (tanggal) params.append("tanggal", tanggal);
+    const params = new URLSearchParams()
+    if (from) params.append("from", from)
+    if (to) params.append("to", to)
+    if (tanggal) params.append("tanggal", tanggal)
 
-    window.location.href = `/suclog/search-flights?${params}`;
-  };
+    window.location.href = `/suclog/search-flights?${params}`
+  }
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat("id-ID", {
       style: "currency",
       currency: "IDR",
       minimumFractionDigits: 0,
-    }).format(price);
-  };
+    }).format(price)
+  }
 
   const handleBookingFLight = (flights: FLIGHT) => {
-    setSelectedFlight(flights);
-    router.push(`/suclog/checkout/${flights.uuid}`);
-  };
+    setSelectedFlight(flights)
+    router.push(`/suclog/checkout/${flights.uuid}`)
+  }
 
   useEffect(() => {
-    filterFlight();
-  }, [filterFlight]);
+    filterFlight()
+  }, [filterFlight])
 
   useEffect(() => {
-    initialValue();
-  }, []);
+    initialValue()
+  }, [])
+
+  useEffect(() => {
+    // Modal will be shown on first render
+    // You can add a timeout to auto-close it after a few seconds if needed
+    // setTimeout(() => setShowModal(false), 5000);
+  }, [])
 
   return (
     <div className="bg-gray-50 min-h-screen">
-      <NavbarLandingPage />
+      <NavbarLandingPage/>
       <main>
         {/* Hero Section */}
         <header
@@ -122,9 +126,7 @@ const LandingFlights = () => {
         >
           <div className="absolute inset-0 bg-gradient-to-r from-blue-900/80 to-black/50"></div>
           <div className="container mx-auto px-4 h-full flex flex-col justify-center relative z-10">
-            <h1 className="font-bold text-5xl mb-4 text-white">
-              Find Your Perfect Flight
-            </h1>
+            <h1 className="font-bold text-5xl mb-4 text-white">Find Your Perfect Flight</h1>
             <p className="text-xl text-white/90 max-w-2xl">
               Discover the best deals on flights to your favorite destinations
             </p>
@@ -134,15 +136,9 @@ const LandingFlights = () => {
         {/* Search Bar */}
         <div className="container mx-auto px-4 relative -top-10">
           <div className="bg-white p-6 shadow-lg rounded-xl">
-            <form
-              action="POST"
-              onSubmit={handleSubmitForm}
-              className="grid grid-cols-1 md:grid-cols-4 gap-4"
-            >
+            <form action="POST" onSubmit={handleSubmitForm} className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">
-                  From
-                </label>
+                <label className="text-sm font-medium text-gray-700">From</label>
                 <div className="relative">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -196,9 +192,7 @@ const LandingFlights = () => {
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">
-                  Date
-                </label>
+                <label className="text-sm font-medium text-gray-700">Date</label>
                 <div className="relative">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -256,11 +250,7 @@ const LandingFlights = () => {
                           <input
                             type="checkbox"
                             id={`airline-${airline.id}`}
-                            checked={
-                              (sorting?.sortAirlines &&
-                                sorting.sortAirlines.id === airline.id) ||
-                              false
-                            }
+                            checked={(sorting?.sortAirlines && sorting.sortAirlines.id === airline.id) || false}
                             onChange={() => {
                               setSorting((prev) => ({
                                 ...prev,
@@ -268,7 +258,7 @@ const LandingFlights = () => {
                                   id: airline.id,
                                   name: airline.name,
                                 },
-                              }));
+                              }))
                             }}
                             className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                           />
@@ -291,9 +281,7 @@ const LandingFlights = () => {
           {/* Flight Listings */}
           <div className="lg:col-span-3 space-y-6">
             <div className="flex justify-between items-center">
-              <h2 className="text-2xl font-bold text-gray-800">
-                Available Flights
-              </h2>
+              <h2 className="text-2xl font-bold text-gray-800">Available Flights</h2>
               <div className="flex items-center space-x-2">
                 <span className="text-sm text-gray-500">Sort by:</span>
                 <select
@@ -333,39 +321,30 @@ const LandingFlights = () => {
                   {/* Flight Details */}
                   <div className="md:col-span-6 flex flex-col justify-center">
                     <div className="flex items-center mb-2">
-                      <span className="px-2 py-1 text-xs font-normal bg-blue-50 text-blue-700 border border-blue-200 rounded-full">
+                      <span
+                        className="px-2 py-1 text-xs font-normal bg-blue-50 text-blue-700 border border-blue-200 rounded-full">
                         {flight.no_penerbangan}
                       </span>
-                      <span className="ml-2 text-sm text-gray-500">
-                        {flight.airlines?.name}
-                      </span>
+                      <span className="ml-2 text-sm text-gray-500">{flight.airlines?.name}</span>
                     </div>
 
                     <div className="flex items-center space-x-3">
                       <div className="text-center">
                         <p className="text-xl font-bold">
-                          {new Date(flight.waktu_keberangkatan).toLocaleString(
-                            "id-ID",
-                            {
-                              minute: "2-digit",
-                              hour: "2-digit",
-                              day: "numeric",
-                              month: "short",
-                              year: "numeric",
-                            }
-                          )}
+                          {new Date(flight.waktu_keberangkatan).toLocaleString("id-ID", {
+                            minute: "2-digit",
+                            hour: "2-digit",
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                          })}
                         </p>
-                        <p className="text-sm text-gray-500">
-                          {flight.kota_keberangkatan}
-                        </p>
+                        <p className="text-sm text-gray-500">{flight.kota_keberangkatan}</p>
                       </div>
 
                       <div className="flex-1 flex flex-col items-center">
                         <div className="text-xs text-gray-500 mb-1">
-                          {timeArrival(
-                            flight.waktu_keberangkatan,
-                            flight.waktu_kedatangan
-                          )}
+                          {timeArrival(flight.waktu_keberangkatan, flight.waktu_kedatangan)}
                         </div>
                         <div className="w-full flex items-center">
                           <div className="h-[2px] flex-1 bg-gray-300"></div>
@@ -389,29 +368,22 @@ const LandingFlights = () => {
 
                       <div className="text-center">
                         <p className="text-xl font-bold">
-                          {new Date(flight.waktu_kedatangan).toLocaleString(
-                            "id-ID",
-                            {
-                              minute: "2-digit",
-                              hour: "2-digit",
-                              day: "numeric",
-                              month: "short",
-                              year: "numeric",
-                            }
-                          )}
+                          {new Date(flight.waktu_kedatangan).toLocaleString("id-ID", {
+                            minute: "2-digit",
+                            hour: "2-digit",
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                          })}
                         </p>
-                        <p className="text-sm text-gray-500">
-                          {flight.kota_tujuan}
-                        </p>
+                        <p className="text-sm text-gray-500">{flight.kota_tujuan}</p>
                       </div>
                     </div>
                   </div>
 
                   {/* Price and Book Button */}
                   <div className="md:col-span-4 flex flex-col justify-center items-end">
-                    <p className="text-2xl font-bold text-blue-600 mb-2">
-                      {formatPrice(Number(flight.harga))}
-                    </p>
+                    <p className="text-2xl font-bold text-blue-600 mb-2">{formatPrice(Number(flight.harga))}</p>
                     <button
                       className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md transition-colors duration-200 font-medium"
                       onClick={() => handleBookingFLight(flight)}
@@ -423,11 +395,7 @@ const LandingFlights = () => {
               </div>
             ))}
 
-            {errorMessage && (
-              <p className="text-center font-bold text-xl">
-                {errorMessage.error}
-              </p>
-            )}
+            {errorMessage && <p className="text-center font-bold text-xl">{errorMessage.error}</p>}
 
             {/* Load More Button */}
             {/* {!errorMessage && (
@@ -442,8 +410,31 @@ const LandingFlights = () => {
       </main>
 
       {/* Footer */}
+      {/* Modal */}
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4 transform transition-all">
+            <div className="text-center">
+              <h3 className="text-xl font-bold text-gray-900 mb-4"><span
+                className="text-red-500">Perhatian:</span> Pihak kami tidak menerima Refund Untuk Pembelian Tiket
+              </h3>
+              <h3 className="text-xl font-bold text-gray-900 mb-4">Pastikan Memahami Syarat dan Ketentuan!
+              </h3>
+              <div className="mt-6">
+                <button
+                  type="button"
+                  className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:text-sm"
+                  onClick={() => setShowModal(false)}
+                >
+                  Saya Mengerti
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
-  );
-};
+  )
+}
 
-export default LandingFlights;
+export default LandingFlights
