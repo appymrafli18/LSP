@@ -12,6 +12,17 @@ export const userController = {
     store: { user: IPayload };
   }) => await userServices.getAllUser(params.role, user),
 
+  filterUser: async ({
+    store: { user },
+    query
+  }: {
+    store: { user: IPayload };
+    query: {email?: string, role: string}
+  }) => {
+    const {email, role} = query;
+    return await userServices.getFilterUser(user, role, email)
+  },
+
   getOneUser: async ({
     params,
     store: { user },

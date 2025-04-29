@@ -7,6 +7,7 @@ const userRoutes = new Elysia({ prefix: "/user" });
 
 userRoutes.onBeforeHandle(middlewareVerifyToken);
 userRoutes.get("/all/:role", userController.getUsers);
+userRoutes.get('/filter', userController.filterUser);
 userRoutes.get("/select/:uuid", userController.getOneUser);
 userRoutes.get("/me", userController.getMeUser);
 userRoutes.get("/count", userController.getTotalUser);

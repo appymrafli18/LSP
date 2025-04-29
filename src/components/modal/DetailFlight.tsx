@@ -43,6 +43,20 @@ const DetailFlight: React.FC<DetailFlightProps> = ({isOpen, onClose, flight, loa
   const availabilityColor =
     availabilityPercentage > 60 ? "bg-green-500" : availabilityPercentage > 30 ? "bg-yellow-500" : "bg-red-500"
 
+  // Get class-specific colors
+  const getClassColor = (type: string) => {
+    switch (type) {
+      case "Economy":
+        return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
+      case "Business":
+        return "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
+      case "FirstClass":
+        return "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300"
+      default:
+        return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300"
+    }
+  }
+
   return (
     <DetailModal isOpen={isOpen} onClose={onClose} title="Flight Details" loading={loading}>
       <div className="space-y-8 py-2">
@@ -51,15 +65,15 @@ const DetailFlight: React.FC<DetailFlightProps> = ({isOpen, onClose, flight, loa
           <div className="flex items-center space-x-4">
             <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded-full">
               <Image
-                src={`/img-airlines/${flight.airlines.logo}`}
-                alt={flight.airlines.name}
+                src={`/img-airlines/${flight.airlines?.logo || "default-airline.png"}`}
+                alt={flight.airlines?.name || "Airline"}
                 className="w-12 h-12 object-contain"
                 width={48}
                 height={48}
               />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white">{flight.airlines.name}</h3>
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">{flight.airlines?.name || "Airline"}</h3>
               <div className="flex items-center mt-1">
                 <span
                   className="px-2.5 py-0.5 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs font-medium rounded-full">
@@ -70,9 +84,36 @@ const DetailFlight: React.FC<DetailFlightProps> = ({isOpen, onClose, flight, loa
           </div>
           <div className="text-right">
             <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-              {convertToRupiah(Number(flight.harga))}
+              {flight.seatClasses && flight.seatClasses.length > 0
+                ? convertToRupiah(Number(flight.seatClasses[0].harga))
+                : "Price unavailable"}
             </div>
-            <div className="text-sm text-gray-500 dark:text-gray-400">per person</div>
+            <div className="text-sm text-gray-500 dark:text-gray-400">starting price</div>
+          </div>
+        </div>
+
+        {/* Seat Classes */}
+        <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+          <h4 className="font-medium text-gray-700 dark:text-gray-300 mb-3">Available Seat Classes</h4>
+          <div className="space-y-3">
+            {flight.seatClasses &&
+              flight.seatClasses.map((seatClass, index) => (
+                <div
+                  key={index}
+                  className="flex justify-between items-center border-b border-gray-200 dark:border-gray-700 pb-2 last:border-0 last:pb-0"
+                >
+                  <div className="flex items-center">
+                    <span
+                      className={`px-2.5 py-0.5 rounded-full text-xs font-medium mr-2 ${getClassColor(seatClass.type)}`}
+                    >
+                      {seatClass.type}
+                    </span>
+                  </div>
+                  <div className="font-medium text-gray-900 dark:text-white">
+                    {convertToRupiah(Number(seatClass.harga))}
+                  </div>
+                </div>
+              ))}
           </div>
         </div>
 

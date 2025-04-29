@@ -95,7 +95,9 @@ const bookingServices = {
     try {
       const response = await prisma_connection.booking.findMany({
         where: {
-          status: "Confirmed",
+          ...(user.role === "Maskapai" && {
+            status: "Confirmed",
+          }),
           ...(user.role === "Maskapai" && {
             flight: {
               airlines: {
@@ -218,9 +220,29 @@ const bookingServices = {
       if (!searchFlights)
         return {statusCode: 404, message: "Flights not found"};
 
+      const seatClasses = searchFlights.seatClasses as {
+        type: string;
+        harga: string;
+        active: boolean;
+      };
+
+      if (!Array.isArray(seatClasses) || seatClasses.length === 0)
+        return {statusCode: 400, msg: "Invalid seat classes data"};
+
+      const findSeatClass = seatClasses.find(seat => seat.type === body.seatClass);
+
+      if (!findSeatClass)
+        return {statusCode: 400, msg: "No active seat class found"};
+
+      const harga = parseFloat(findSeatClass.harga);
+      const countKursi = Number(body.jumlah_kursi);
+      if (isNaN(countKursi) || countKursi <= 0) return {statusCode: 400, msg: "Invalid number of seats"};
+
+
       const data = {
         jumlah_kursi: Number(body.jumlah_kursi),
-        total_harga: searchFlights.harga.toNumber() * Number(body.jumlah_kursi),
+        seatClasses: findSeatClass.type,
+        total_harga: harga * countKursi,
         flightId: searchFlights.id,
         userId: user.role === "Admin" ? (body.userId as number) : user.id,
       };
@@ -242,6 +264,7 @@ const bookingServices = {
           userId: data.userId,
           jumlah_kursi: data.jumlah_kursi,
           flightId: data.flightId,
+          seatClass: data.seatClasses,
           total_harga: data.total_harga,
         },
       });
@@ -303,9 +326,31 @@ const bookingServices = {
       if (!searchBookings)
         return {statusCode: 404, message: "Bookings not found"};
 
+      const seatClasses = searchFlights.seatClasses as {
+        type: string;
+        harga: string;
+        active: boolean;
+      };
+
+      if (!Array.isArray(seatClasses) || seatClasses.length === 0)
+        return {statusCode: 400, msg: "Invalid seat classes data"};
+
+      const activeSeatClass = seatClasses.find(seat => seat.active);
+
+      if (!activeSeatClass)
+        return {statusCode: 400, msg: "No active seat class found"};
+
+      const harga = parseFloat(activeSeatClass.harga);
+      if (isNaN(harga)) return {statusCode: 400, msg: "Invalid price format"};
+
+      const countKursi = Number(body.jumlah_kursi);
+      if (isNaN(countKursi) || countKursi <= 0) return {statusCode: 400, msg: "Invalid number of seats"};
+
+
       const data = {
         jumlah_kursi: Number(body.jumlah_kursi),
-        total_harga: searchFlights.harga.toNumber() * Number(body.jumlah_kursi),
+        seatClasses: seatClasses,
+        total_harga: harga * countKursi,
         flightId: searchFlights.id,
         userId: user.role === "Admin" ? (body.userId as number) : user.id,
       };

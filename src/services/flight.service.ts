@@ -1,6 +1,7 @@
-import { prisma_connection } from "@/lib/prisma-orm";
-import { SelectFlight } from "@/types/flight";
-import { IPayload } from "@/types/jwt";
+import {prisma_connection} from "@/lib/prisma-orm";
+import {SelectFlight} from "@/types/flight";
+import {IPayload} from "@/types/jwt";
+import {Prisma} from "@prisma/client";
 
 const flightServices = {
   getAllFlight: async (user: IPayload) => {
@@ -12,7 +13,7 @@ const flightServices = {
       });
 
       if (!searchAirlines && user.role === "Maskapai")
-        return { statusCode: 404, message: "Airlines not found" };
+        return {statusCode: 404, message: "Airlines not found"};
 
       const response = await prisma_connection.flights.findMany({
         where: {
@@ -33,7 +34,7 @@ const flightServices = {
         },
       });
 
-      return { statusCode: 200, message: "Success", data: response };
+      return {statusCode: 200, message: "Success", data: response};
     } catch (error) {
       return {
         statusCode: 400,
@@ -49,13 +50,16 @@ const flightServices = {
     maxPrice?: string,
     date?: string,
     departureCity?: string,
-    destinationCity?: string
+    destinationCity?: string,
+    user?: IPayload,
+    no_penerbangan?: string,
   ) => {
     try {
       const now = new Date();
       now.setHours(0, 0, 0, 0);
       const response = await prisma_connection.flights.findMany({
         where: {
+          ...(user && user.role !== "User" && {no_penerbangan}),
           waktu_keberangkatan: {
             gte: now,
           },
@@ -109,7 +113,7 @@ const flightServices = {
               name: true,
               logo: true,
             },
-          },
+          }
         },
       });
 
@@ -154,7 +158,7 @@ const flightServices = {
 
   getTotalFLight: async (user: IPayload) => {
     if (user.role === "User")
-      return { statusCode: 401, message: "Unauthorized" };
+      return {statusCode: 401, message: "Unauthorized"};
 
     try {
       const totalFlight = await prisma_connection.flights.count({
@@ -167,7 +171,7 @@ const flightServices = {
         },
       });
 
-      return { statusCode: 200, message: "Success", data: totalFlight };
+      return {statusCode: 200, message: "Success", data: totalFlight};
     } catch (error) {
       return {
         statusCode: 400,
@@ -186,7 +190,7 @@ const flightServices = {
       });
 
       if (!searchAirlines && user.role === "Maskapai")
-        return { statusCode: 404, message: "Airlines not found" };
+        return {statusCode: 404, message: "Airlines not found"};
 
       const response = await prisma_connection.flights.findUnique({
         where: {
@@ -226,9 +230,9 @@ const flightServices = {
         },
       });
 
-      if (!response) return { statusCode: 404, message: "Flight not found" };
+      if (!response) return {statusCode: 404, message: "Flight not found"};
 
-      return { statusCode: 200, message: "Success", data: response };
+      return {statusCode: 200, message: "Success", data: response};
     } catch (error) {
       return {
         statusCode: 400,
@@ -239,8 +243,8 @@ const flightServices = {
   },
 
   createFlight: async (body: SelectFlight, user: IPayload) => {
-    if (user.role === "User")
-      return { statusCode: 401, message: "Unauthorized" };
+    if (user.role !== "Maskapai")
+      return {statusCode: 401, message: "Unauthorized"};
     try {
       const searchAirlines = await prisma_connection.airlines.findUnique({
         where: {
@@ -249,7 +253,10 @@ const flightServices = {
       });
 
       if (!searchAirlines)
-        return { statusCode: 404, message: "Airlines not found" };
+        return {statusCode: 404, message: "Airlines not found"};
+
+      if (!Array.isArray(body.seatClasses) || body.seatClasses.length === 0)
+        return {statusCode: 400, msg: "Invalid seat classes data"};
 
       const flightsData = {
         no_penerbangan: body.no_penerbangan,
@@ -257,10 +264,10 @@ const flightServices = {
         kota_tujuan: body.kota_tujuan,
         waktu_keberangkatan: body.waktu_keberangkatan,
         waktu_kedatangan: body.waktu_kedatangan,
-        harga: Number(body.harga),
         kapasitas_kursi: Number(body.kapasitas_kursi),
         kursi_tersedia: Number(body.kursi_tersedia),
         airlinesId: searchAirlines.id,
+        seatClasses: JSON.parse(JSON.stringify(body.seatClasses)),
       };
 
       const searchFlights = await prisma_connection.flights.findUnique({
@@ -297,9 +304,10 @@ const flightServices = {
       };
     }
   },
+
   updateFlight: async (body: SelectFlight, uuid: string, user: IPayload) => {
-    if (user.role === "User")
-      return { statusCode: 401, message: "Unauthorized" };
+    if (user.role !== "Maskapai")
+      return {statusCode: 401, message: "Unauthorized"};
     try {
       const searchAirlines = await prisma_connection.airlines.findUnique({
         where: {
@@ -319,7 +327,6 @@ const flightServices = {
         kota_tujuan: body.kota_tujuan,
         waktu_keberangkatan: body.waktu_keberangkatan,
         waktu_kedatangan: body.waktu_kedatangan,
-        harga: Number(body.harga),
         kapasitas_kursi: Number(body.kapasitas_kursi),
         kursi_tersedia: Number(body.kursi_tersedia),
       };
@@ -355,13 +362,26 @@ const flightServices = {
       });
 
       if (!searchFlights)
-        return { statusCode: 404, message: "Flight not found" };
+        return {statusCode: 404, message: "Flight not found"};
+
+      const seatClasses = body.seatClasses;
+      const formatType = ['Economy', 'Business', 'FirstClass'];
+
+      if (!seatClasses?.every(item => formatType.includes(item.type))) {
+        return {statusCode: 400, message: "Format SeatClass Failed"};
+      }
+
+      const updatedData: Prisma.FlightsUpdateInput = {
+        ...flightsData,
+        seatClasses: JSON.parse(JSON.stringify(seatClasses || searchFlights.seatClasses)),
+      }
+
 
       await prisma_connection.flights.update({
-        data: flightsData,
+        data: updatedData,
         where: {
           id: searchFlights.id,
-        },
+        }
       });
 
       return {
@@ -376,9 +396,10 @@ const flightServices = {
       };
     }
   },
+
   deleteFlight: async (uuid: string, user: IPayload) => {
     if (user.role === "User")
-      return { statusCode: 401, message: "Unauthorized" };
+      return {statusCode: 401, message: "Unauthorized"};
     try {
       const searchAirlines = await prisma_connection.airlines.findUnique({
         where: {
@@ -387,7 +408,7 @@ const flightServices = {
       });
 
       if (!searchAirlines && user.role === "Maskapai")
-        return { statusCode: 404, message: "Airlines not found" };
+        return {statusCode: 404, message: "Airlines not found"};
 
       const searchFlights = await prisma_connection.flights.findUnique({
         where: {
@@ -399,7 +420,7 @@ const flightServices = {
       });
 
       if (!searchFlights)
-        return { statusCode: 404, message: "Flight not found" };
+        return {statusCode: 404, message: "Flight not found"};
 
       await prisma_connection.flights.delete({
         where: {
@@ -407,7 +428,7 @@ const flightServices = {
         },
       });
 
-      return { statusCode: 200, message: "Success deleted data flight" };
+      return {statusCode: 200, message: "Success deleted data flight"};
     } catch (error) {
       return {
         statusCode: 400,

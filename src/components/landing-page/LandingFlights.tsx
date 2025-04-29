@@ -4,11 +4,10 @@ import type React from "react"
 
 import axios from "axios"
 import type {IAirlines} from "@/types/airlines"
-import type {FLIGHT} from "@/types/payment"
+import type {FLIGHT, SeatClass} from "@/types/flight"
 import Image from "next/image"
 import {useRouter, useSearchParams} from "next/navigation"
 import {ErrorAxios} from "@/lib/axios-error"
-import useFlightStore from "@/store/booking"
 import timeArrival from "@/lib/timeArrival"
 import NavbarLandingPage from "./NavbarList/NavbarLandingPage"
 
@@ -22,7 +21,6 @@ interface ISorting {
 
 const LandingFlights = () => {
   const router = useRouter()
-  const {setSelectedFlight} = useFlightStore()
   const [airlines, setAirlines] = useState<IAirlines[]>([])
   const [flights, setFlights] = useState<FLIGHT[]>([])
   const [errorMessage, setErrorMessage] = useState<Record<string, string>>()
@@ -58,7 +56,6 @@ const LandingFlights = () => {
 
       const resFlight = await axios.get(`/api/flights/filter?${params.toString()}`)
       if (resFlight.status === 200) {
-        console.log({rf: resFlight.data})
         setFlights(resFlight.data.data)
       }
     } catch (error) {
@@ -93,10 +90,32 @@ const LandingFlights = () => {
     }).format(price)
   }
 
-  const handleBookingFLight = (flights: FLIGHT) => {
-    setSelectedFlight(flights)
-    router.push(`/suclog/checkout/${flights.uuid}`)
+  // Helper function to get the lowest price from seat classes
+  const getLowestPrice = (seatClasses: SeatClass[] | undefined): number => {
+    if (!seatClasses || seatClasses.length === 0) return 0
+
+    // Find the lowest price among all seat classes
+    const prices = seatClasses.map((sc) => Number(sc.harga))
+    return Math.min(...prices)
   }
+
+  // Helper function to get class-specific colors
+  const getClassColor = (type: string) => {
+    switch (type) {
+      case "Economy":
+        return "bg-green-100 text-green-800"
+      case "Business":
+        return "bg-blue-100 text-blue-800"
+      case "FirstClass":
+        return "bg-purple-100 text-purple-800"
+      default:
+        return "bg-gray-100 text-gray-800"
+    }
+  }
+
+  const handleBookingFLight = (flight: FLIGHT) => {
+    router.push(`/suclog/checkout/${flight.uuid}`);
+  };
 
   useEffect(() => {
     filterFlight()
@@ -136,7 +155,7 @@ const LandingFlights = () => {
         {/* Search Bar */}
         <div className="container mx-auto px-4 relative -top-10">
           <div className="bg-white p-6 shadow-lg rounded-xl">
-            <form action="POST" onSubmit={handleSubmitForm} className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <form method="POST" onSubmit={handleSubmitForm} className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-700">From</label>
                 <div className="relative">
@@ -274,6 +293,55 @@ const LandingFlights = () => {
                       ))}
                   </div>
                 </div>
+
+                {/* Seat Class Filter */}
+                <div>
+                  <h3 className="font-medium text-gray-700 mb-3">Seat Class</h3>
+                  <div className="space-y-2">
+                    <div
+                      className="flex items-center space-x-3 p-2 hover:bg-gray-50 rounded-lg transition-colors duration-200">
+                      <input
+                        type="checkbox"
+                        id="economy-class"
+                        className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                      <label
+                        htmlFor="economy-class"
+                        className="text-gray-700 font-medium cursor-pointer select-none text-sm"
+                      >
+                        Economy
+                      </label>
+                    </div>
+                    <div
+                      className="flex items-center space-x-3 p-2 hover:bg-gray-50 rounded-lg transition-colors duration-200">
+                      <input
+                        type="checkbox"
+                        id="business-class"
+                        className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                      <label
+                        htmlFor="business-class"
+                        className="text-gray-700 font-medium cursor-pointer select-none text-sm"
+                      >
+                        Business
+                      </label>
+                    </div>
+                    <div
+                      className="flex items-center space-x-3 p-2 hover:bg-gray-50 rounded-lg transition-colors duration-200">
+                      <input
+                        type="checkbox"
+                        id="first-class"
+                        className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                      <label
+                        htmlFor="first-class"
+                        className="text-gray-700 font-medium cursor-pointer select-none text-sm"
+                      >
+                        First Class
+                      </label>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -303,15 +371,15 @@ const LandingFlights = () => {
 
             {flights.map((flight) => (
               <div
-                key={flight.id}
+                key={flight.uuid}
                 className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300"
               >
                 <div className="p-6 grid grid-cols-1 md:grid-cols-12 gap-4">
                   {/* Airline Logo */}
                   <div className="md:col-span-2 flex justify-center items-center">
                     <Image
-                      src={`/img-airlines/${flight.airlines?.logo}`}
-                      alt={"Logo"}
+                      src={`/img-airlines/${flight.airlines?.logo || "default-airline.png"}`}
+                      alt={flight.airlines?.name || "Airline"}
                       className="h-12 w-12 object-contain"
                       width={100}
                       height={100}
@@ -379,11 +447,27 @@ const LandingFlights = () => {
                         <p className="text-sm text-gray-500">{flight.kota_tujuan}</p>
                       </div>
                     </div>
+
+                    {/* Seat Classes */}
+                    <div className="mt-3 flex flex-wrap gap-1">
+                      {flight.seatClasses &&
+                        flight.seatClasses.map((seatClass, idx) => (
+                          <span
+                            key={idx}
+                            className={`px-2 py-0.5 text-xs rounded-full ${getClassColor(seatClass.type)}`}
+                          >
+                            {seatClass.type}
+                          </span>
+                        ))}
+                    </div>
                   </div>
 
                   {/* Price and Book Button */}
                   <div className="md:col-span-4 flex flex-col justify-center items-end">
-                    <p className="text-2xl font-bold text-blue-600 mb-2">{formatPrice(Number(flight.harga))}</p>
+                    <p className="text-2xl font-bold text-blue-600 mb-2">
+                      {formatPrice(getLowestPrice(flight.seatClasses))}
+                    </p>
+                    <p className="text-xs text-gray-500 mb-2">Starting price</p>
                     <button
                       className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md transition-colors duration-200 font-medium"
                       onClick={() => handleBookingFLight(flight)}
@@ -403,7 +487,7 @@ const LandingFlights = () => {
                 <button className="border border-blue-500 text-blue-600 hover:bg-blue-50 px-6 py-2 rounded-md transition-colors duration-200 font-medium">
                   Load More Flights
                 </button>
-              </div>
+              </div
             )} */}
           </div>
         </div>
@@ -415,11 +499,10 @@ const LandingFlights = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
           <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4 transform transition-all">
             <div className="text-center">
-              <h3 className="text-xl font-bold text-gray-900 mb-4"><span
-                className="text-red-500">Perhatian:</span> Pihak kami tidak menerima Refund Untuk Pembelian Tiket
+              <h3 className="text-xl font-bold text-gray-900 mb-4">
+                <span className="text-red-500">Perhatian:</span> Pihak kami tidak menerima Refund Untuk Pembelian Tiket
               </h3>
-              <h3 className="text-xl font-bold text-gray-900 mb-4">Pastikan Memahami Syarat dan Ketentuan!
-              </h3>
+              <h3 className="text-xl font-bold text-gray-900 mb-4">Pastikan Memahami Syarat dan Ketentuan!</h3>
               <div className="mt-6">
                 <button
                   type="button"

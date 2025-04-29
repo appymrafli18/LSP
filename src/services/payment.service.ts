@@ -1,12 +1,12 @@
-import { prisma_connection } from "@/lib/prisma-orm";
-import { IPayload } from "@/types/jwt";
-import { IPayment } from "@/types/payment";
-import { Status } from "@prisma/client";
+import {prisma_connection} from "@/lib/prisma-orm";
+import {IPayload} from "@/types/jwt";
+import {IPayment} from "@/types/payment";
+import {Status} from "@prisma/client";
 
 const paymentServices = {
   getAllPayments: async (status: string, user: IPayload) => {
     if (user.role === "Maskapai")
-      return { statusCode: 401, message: "Unauthorized" };
+      return {statusCode: 401, message: "Unauthorized"};
     try {
       const searchAirlines = await prisma_connection.airlines.findUnique({
         where: {
@@ -18,15 +18,15 @@ const paymentServices = {
       });
 
       if (!searchAirlines && user.role === "Maskapai")
-        return { statusCode: 404, message: "Airlines not found" };
+        return {statusCode: 404, message: "Airlines not found"};
 
       const airlinesId = searchAirlines?.id;
       const response = await prisma_connection.payment.findMany({
         where: {
           // ...(status && status in Status && { status: status as Status }),
-          ...(status && { status: status as Status }),
+          ...(status && {status: status as Status}),
           booking: {
-            ...(user.role === "User" && { userId: user.id }),
+            ...(user.role === "User" && {userId: user.id}),
             flight: {
               airlinesId: airlinesId,
             },
@@ -49,9 +49,9 @@ const paymentServices = {
         },
       });
 
-      if (!response) return { statusCode: 404, message: "Payments not found" };
+      if (!response) return {statusCode: 404, message: "Payments not found"};
 
-      return { statusCode: 200, message: "Success", data: response };
+      return {statusCode: 200, message: "Success", data: response};
     } catch (error) {
       return {
         statusCode: 400,
@@ -63,7 +63,7 @@ const paymentServices = {
 
   getOnePayment: async (uuid: string, user: IPayload) => {
     if (user.role === "Maskapai")
-      return { statusCode: 401, message: "Unauthorized" };
+      return {statusCode: 401, message: "Unauthorized"};
     try {
       const searchAirlines = await prisma_connection.airlines.findUnique({
         where: {
@@ -75,14 +75,14 @@ const paymentServices = {
       });
 
       if (!searchAirlines && user.role === "Maskapai")
-        return { statusCode: 404, message: "Airlines not found" };
+        return {statusCode: 404, message: "Airlines not found"};
 
       const airlinesId = searchAirlines?.id;
       const response = await prisma_connection.payment.findUnique({
         where: {
           uuid,
           booking: {
-            ...(user.role === "User" && { userId: user.id }),
+            ...(user.role === "User" && {userId: user.id}),
             flight: {
               airlinesId: airlinesId,
             },
@@ -103,9 +103,9 @@ const paymentServices = {
         },
       });
 
-      if (!response) return { statusCode: 404, message: "Payment not found" };
+      if (!response) return {statusCode: 404, message: "Payment not found"};
 
-      return { statusCode: 200, message: "Success", data: response };
+      return {statusCode: 200, message: "Success", data: response};
     } catch (error) {
       return {
         statusCode: 400,
@@ -117,7 +117,7 @@ const paymentServices = {
 
   getTotalRevenuePayment: async (user: IPayload) => {
     if (user.role === "User")
-      return { statusCode: 401, message: "Unauthorized" };
+      return {statusCode: 401, message: "Unauthorized"};
     try {
       const totalRevenue = await prisma_connection.payment.aggregate({
         _sum: {
@@ -153,7 +153,7 @@ const paymentServices = {
 
   createPayment: async (body: IPayment, user: IPayload) => {
     if (user.role !== "User")
-      return { statusCode: 401, message: "Unauthorized" };
+      return {statusCode: 401, message: "Unauthorized"};
     try {
       const searchBooking = await prisma_connection.booking.findUnique({
         where: {
@@ -162,10 +162,11 @@ const paymentServices = {
       });
 
       if (!searchBooking)
-        return { statusCode: 404, message: "Booking not found" };
+        return {statusCode: 404, message: "Booking not found"};
 
       const data = {
         payment_method: body.payment_method,
+        seatClass: searchBooking.seatClass,
         jumlah_pembayaran: searchBooking.total_harga,
         bookingId: searchBooking.id,
       };
@@ -174,7 +175,7 @@ const paymentServices = {
         data,
       });
 
-      return { statusCode: 201, message: "Success", data: response };
+      return {statusCode: 201, message: "Success", data: response};
     } catch (error) {
       return {
         statusCode: 400,
@@ -186,7 +187,7 @@ const paymentServices = {
 
   updatePayment: async (uuid: string, body: IPayment, user: IPayload) => {
     if (user.role !== "Admin")
-      return { statusCode: 401, message: "Unauthorized" };
+      return {statusCode: 401, message: "Unauthorized"};
 
     try {
       const searchPayment = await prisma_connection.payment.findUnique({
@@ -199,7 +200,7 @@ const paymentServices = {
       });
 
       if (!searchPayment)
-        return { statusCode: 404, message: "Payment not found" };
+        return {statusCode: 404, message: "Payment not found"};
 
       const data = {
         payment_method: body.payment_method,
@@ -208,7 +209,7 @@ const paymentServices = {
       };
 
       if (body?.status && !(body.status in Status))
-        return { statusCode: 400, message: "Status not found" };
+        return {statusCode: 400, message: "Status not found"};
 
       const flightId = searchPayment.booking.flightId;
       const countKursi = searchPayment.booking.jumlah_kursi;
@@ -219,7 +220,7 @@ const paymentServices = {
         },
       });
 
-      if (!flight) return { statusCode: 404, message: "Flight not found" };
+      if (!flight) return {statusCode: 404, message: "Flight not found"};
 
       if (body.status === "Confirmed") {
         await prisma_connection.booking.update({
@@ -257,7 +258,7 @@ const paymentServices = {
         data,
       });
 
-      return { statusCode: 200, message: "Success Updated Payment" };
+      return {statusCode: 200, message: "Success Updated Payment"};
     } catch (error) {
       return {
         statusCode: 400,
@@ -269,7 +270,7 @@ const paymentServices = {
 
   deletePayment: async (uuid: string, user: IPayload) => {
     if (user.role !== "Admin")
-      return { statusCode: 401, message: "Unauthorized" };
+      return {statusCode: 401, message: "Unauthorized"};
     try {
       const searchPayment = await prisma_connection.payment.findUnique({
         where: {
@@ -278,7 +279,7 @@ const paymentServices = {
       });
 
       if (!searchPayment)
-        return { statusCode: 404, message: "Payment not found" };
+        return {statusCode: 404, message: "Payment not found"};
 
       await prisma_connection.payment.delete({
         where: {
@@ -286,7 +287,7 @@ const paymentServices = {
         },
       });
 
-      return { statusCode: 200, message: "Success Deleted Payment" };
+      return {statusCode: 200, message: "Success Deleted Payment"};
     } catch (error) {
       return {
         statusCode: 400,

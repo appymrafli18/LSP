@@ -7,11 +7,13 @@ import FlightTable from "@/components/table/FlightTable";
 import {ErrorAxios} from "@/lib/axios-error";
 import {FLIGHT, SelectFlight} from "@/types/flight";
 import axios from "axios";
-import {useCallback, useEffect, useState} from "react";
+import React, {FormEvent, useCallback, useEffect, useState} from "react";
 import toast, {Toaster} from "react-hot-toast";
+import useMe from "@/store/me";
 
 const Page: React.FC = () => {
   const [data, setData] = useState<FLIGHT[]>([]);
+  const {user} = useMe();
   const [errorMessage, setErrorMessage] = useState<Record<string, string>>({});
   const [selectedData, setSelectedData] = useState<SelectFlight>();
   const [isAdd, setIsAdd] = useState<boolean>(false);
@@ -73,6 +75,40 @@ const Page: React.FC = () => {
     setIsAdd(true);
   };
 
+  const handleSubmitForm = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    const params = new URLSearchParams();
+    const no_penerbangan = formData.get("no-penerbangan");
+
+    try {
+      if (no_penerbangan) params.append("no_penerbangan", no_penerbangan as string);
+      let response;
+
+      if (no_penerbangan) {
+        response = await axios.get(`/api/flights/filter?${params.toString()}`);
+      } else {
+        response = await axios.get("/api/flights/all");
+      }
+
+      if (response.status === 200 && response.data.data.length > 0) {
+        setData(response.data.data);
+        setErrorMessage({});
+      } else {
+        setData([]);
+        setErrorMessage({error: response.data.message});
+      }
+    } catch (error) {
+      const err = ErrorAxios(error);
+      setData([]);
+      if (typeof err === "object") {
+        setErrorMessage(err as Record<string, string>);
+      } else {
+        setErrorMessage({error: err});
+      }
+    }
+  }
+
   useEffect(() => {
     initialData();
   }, [initialData]);
@@ -83,19 +119,30 @@ const Page: React.FC = () => {
         <Toaster position="top-right" reverseOrder={false}/>
         <div className="mb-6 flex justify-between items-center">
           <h1 className="text-2xl font-bold">Manage Flights</h1>
-          <button
-            // onClick={() => setIsAdd(true)}
-            onClick={onAdd}
-            className="mr-2 px-4 py-2 bg-green-500 hover:bg-green-600 rounded-md text-white"
-          >
-            Create
-          </button>
+
+          <div className="flex gap-2 items-center mb-4">
+            <form className="flex gap-2 items-center" onSubmit={handleSubmitForm}>
+              <input type="text" name="no-penerbangan" placeholder="Nomor Penerbangan ..."
+                     className="border px-3 py-2 rounded w-64 focus:outline-none focus:ring-2 focus:ring-blue-500"/>
+              <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Search
+              </button>
+            </form>
+            {
+              user?.role === "Maskapai" && <button
+                    onClick={onAdd}
+                    className="mr-2 px-4 py-2 bg-green-500 hover:bg-green-600 rounded-md text-white"
+                >
+                    Create
+                </button>
+            }
+          </div>
         </div>
         <FlightTable
           initialValues={data}
           errorMessage={errorMessage}
           loading={loading}
           onEdit={onEdit}
+          role={user?.role}
           onDelete={onDelete}
           onDetail={onDetail}
         />

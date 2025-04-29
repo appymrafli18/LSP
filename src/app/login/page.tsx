@@ -122,6 +122,12 @@ const Page = () => {
                     <ArrowLeft className="h-4 w-4 mr-1"/>
                     Kembali
                   </Link>
+                  <Link
+                    href="/register"
+                    className="text-sky-600 hover:text-sky-800 dark:text-sky-400 dark:hover:text-sky-300 text-sm font-medium transition-colors"
+                  >
+                    Register
+                  </Link>
                 </div>
               </>
             )}

@@ -1,19 +1,19 @@
-import { hashPassword } from "@/lib/auth";
-import { converterError } from "@/lib/convert-validation";
-import { prisma_connection } from "@/lib/prisma-orm";
-import { createUserSchema } from "@/lib/validation-user";
-import { IPayload } from "@/types/jwt";
-import { USER } from "@/types/user";
-import { Role } from "@prisma/client";
+import {hashPassword} from "@/lib/auth";
+import {converterError} from "@/lib/convert-validation";
+import {prisma_connection} from "@/lib/prisma-orm";
+import {createUserSchema} from "@/lib/validation-user";
+import {IPayload} from "@/types/jwt";
+import {USER} from "@/types/user";
+import {Role} from "@prisma/client";
 import argon2 from "argon2";
 
 export const userServices = {
   getAllUser: async (role: string, user: IPayload) => {
     if (user.role !== "Admin")
-      return { statusCode: 401, message: "Unauthorized" };
+      return {statusCode: 401, message: "Unauthorized"};
 
     if (!(role in Role))
-      return { statusCode: 400, message: "Invalid Selected Path" };
+      return {statusCode: 400, message: "Invalid Selected Path"};
     try {
       const user = await prisma_connection.user.findMany({
         where: {
@@ -25,8 +25,43 @@ export const userServices = {
           updatedAt: true,
         },
       });
-      if (!user.length) return { statusCode: 404, message: "User not found" };
-      return { statusCode: 200, message: "Success", data: user };
+      if (!user || user.length < 1) return {statusCode: 404, message: "User not found"};
+      return {statusCode: 200, message: "Success", data: user};
+    } catch (error) {
+      return {
+        statusCode: 400,
+        message: "Terjadi kesalahan Internal",
+        error: (error as Error).message,
+      };
+    }
+  },
+
+  getFilterUser: async (user: IPayload, role: string, email?: string) => {
+    if (user.role !== "Admin")
+      return {statusCode: 401, message: "Unauthorized"};
+
+    if (!(role in Role))
+      return {statusCode: 400, message: "Invalid Selected Path"};
+    try {
+      const user = await prisma_connection.user.findMany({
+        where: {
+          role: role as Role,
+          ...(email && {
+            email: {
+              contains: email,
+              mode: "insensitive"
+            },
+          })
+        },
+        omit: {
+          password: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      });
+      if (!user || user.length < 1) return {statusCode: 404, message: "User not found"};
+
+      return {statusCode: 200, message: "Success", data: user};
     } catch (error) {
       return {
         statusCode: 400,
@@ -38,7 +73,7 @@ export const userServices = {
 
   getOneUser: async (uuid: string, user: IPayload) => {
     if (user.role !== "Admin")
-      return { statusCode: 401, message: "Unauthorized" };
+      return {statusCode: 401, message: "Unauthorized"};
 
     try {
       const user = await prisma_connection.user.findUnique({
@@ -51,8 +86,8 @@ export const userServices = {
           updatedAt: true,
         },
       });
-      if (!user) return { statusCode: 404, message: "User not found" };
-      return { statusCode: 200, message: "Success", data: user };
+      if (!user) return {statusCode: 404, message: "User not found"};
+      return {statusCode: 200, message: "Success", data: user};
     } catch (error) {
       return {
         statusCode: 400,
@@ -75,9 +110,9 @@ export const userServices = {
         },
       });
 
-      if (!response) return { statusCode: 404, message: "User not found" };
+      if (!response) return {statusCode: 404, message: "User not found"};
 
-      return { statusCode: 200, message: "Success", data: response };
+      return {statusCode: 200, message: "Success", data: response};
     } catch (error) {
       return {
         statusCode: 400,
@@ -89,11 +124,11 @@ export const userServices = {
 
   getTotalUser: async (user: IPayload) => {
     if (user.role !== "Admin")
-      return { statusCode: 401, message: "Unauthorized" };
+      return {statusCode: 401, message: "Unauthorized"};
     try {
       const user = await prisma_connection.user.count();
-      if (!user) return { statusCode: 404, message: "Not Have User" };
-      return { statusCode: 200, message: "Success", data: user };
+      if (!user) return {statusCode: 404, message: "Not Have User"};
+      return {statusCode: 200, message: "Success", data: user};
     } catch (error) {
       return {
         statusCode: 400,
@@ -105,9 +140,9 @@ export const userServices = {
 
   createUser: async (body: USER, user: IPayload) => {
     if (user.role !== "Admin")
-      return { statusCode: 401, message: "Unauthorized" };
+      return {statusCode: 401, message: "Unauthorized"};
     try {
-      const { error, data } = createUserSchema.safeParse(body);
+      const {error, data} = createUserSchema.safeParse(body);
 
       if (error)
         return {
@@ -117,8 +152,8 @@ export const userServices = {
         };
       // 🔍 Cek duplikasi username atau email sebelum insert
       const existingUser = await prisma_connection.user.findFirst({
-        where: { OR: [{ username: data.username }, { email: data.email }] },
-        select: { username: true, email: true },
+        where: {OR: [{username: data.username}, {email: data.email}]},
+        select: {username: true, email: true},
       });
 
       if (existingUser) {
@@ -148,7 +183,7 @@ export const userServices = {
         },
       });
 
-      return { statusCode: 201, message: "User Created Successfully" };
+      return {statusCode: 201, message: "User Created Successfully"};
     } catch (error) {
       return {
         statusCode: 500,
@@ -165,7 +200,7 @@ export const userServices = {
         },
       });
 
-      if (!search) return { statusCode: 404, message: "User not found" };
+      if (!search) return {statusCode: 404, message: "User not found"};
 
       const updatedData = {
         ...search,
@@ -187,7 +222,7 @@ export const userServices = {
         data: updatedData,
       });
 
-      return { statusCode: 200, message: "Success updated data user" };
+      return {statusCode: 200, message: "Success updated data user"};
     } catch (error) {
       return {
         statusCode: 400,
@@ -199,7 +234,7 @@ export const userServices = {
 
   updateUser: async (uuid: string, body: USER, user: IPayload) => {
     if (user.role !== "Admin")
-      return { statusCode: 401, message: "Unauthorized" };
+      return {statusCode: 401, message: "Unauthorized"};
     try {
       const search = await prisma_connection.user.findUnique({
         where: {
@@ -207,7 +242,7 @@ export const userServices = {
         },
       });
 
-      if (!search) return { statusCode: 404, message: "User not found" };
+      if (!search) return {statusCode: 404, message: "User not found"};
 
       const updatedData = {
         ...search,
@@ -230,7 +265,7 @@ export const userServices = {
         data: updatedData,
       });
 
-      return { statusCode: 200, message: "Success updated data user" };
+      return {statusCode: 200, message: "Success updated data user"};
     } catch (error) {
       return {
         statusCode: 400,
@@ -242,7 +277,7 @@ export const userServices = {
 
   deleteUser: async (uuid: string, user: IPayload) => {
     if (user.role !== "Admin")
-      return { statusCode: 401, message: "Unauthorized" };
+      return {statusCode: 401, message: "Unauthorized"};
     try {
       const search = await prisma_connection.user.findUnique({
         where: {
@@ -250,7 +285,7 @@ export const userServices = {
         },
       });
 
-      if (!search) return { statusCode: 404, message: "User not found" };
+      if (!search) return {statusCode: 404, message: "User not found"};
 
       await prisma_connection.booking.deleteMany({
         where: {
@@ -263,7 +298,7 @@ export const userServices = {
         },
       });
 
-      return { statusCode: 200, message: "Success deleted data user" };
+      return {statusCode: 200, message: "Success deleted data user"};
     } catch (error) {
       return {
         statusCode: 400,

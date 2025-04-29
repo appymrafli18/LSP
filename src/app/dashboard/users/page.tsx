@@ -1,5 +1,5 @@
 "use client"
-import {useCallback, useEffect, useState, useRef} from "react"
+import {useCallback, useEffect, useState, useRef, FormEvent} from "react"
 import type React from "react"
 
 import UserTable from "@/components/table/UserTable"
@@ -21,7 +21,6 @@ const Page: React.FC = () => {
   const [isAdd, setIsAdd] = useState<boolean>(false)
   const [selectedRole, setSelectedRole] = useState<string>("User")
   const [dropdownOpen, setDropdownOpen] = useState<boolean>(false)
-
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   const roles = [
@@ -126,6 +125,46 @@ const Page: React.FC = () => {
     setDropdownOpen(false)
   }
 
+  const handleSubmitForm = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setLoading(true);
+    const formData = new FormData(event.currentTarget);
+    const params = new URLSearchParams();
+    const email = formData.get("email");
+
+    try {
+      if (email) params.append("email", email as string);
+      if (selectedRole) params.append("role", selectedRole as string);
+      let response;
+
+      if (email) {
+        response = await axios.get(`/api/user/filter?${params.toString()}`);
+      } else {
+        response = await axios.get(`/api/user/all/${selectedRole}`);
+      }
+
+      if (response.status === 200 && response.data.data.length > 0) {
+        setUsers(response.data.data);
+        setErrorMessage({});
+      } else {
+        setUsers([]);
+        setErrorMessage({error: response.data.message});
+      }
+      setLoading(false);
+    } catch (error) {
+      const err = ErrorAxios(error);
+      setUsers([]);
+      setLoading(false);
+      if (typeof err === "object") {
+        setErrorMessage(err as Record<string, string>)
+      } else {
+        setErrorMessage({error: err})
+      }
+    } finally {
+      setLoading(false);
+    }
+  }
+
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -203,13 +242,22 @@ const Page: React.FC = () => {
               )}
             </div>
 
-            <button
-              className="flex items-center justify-center rounded-lg bg-green-500 hover:bg-green-600 px-6 py-2.5 text-white font-medium transition-colors duration-200 shadow-sm hover:shadow focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
-              onClick={() => onAdd()}
-            >
-              <Plus className="h-4 w-4 mr-1.5"/>
-              Create
-            </button>
+            <div className="flex gap-2 items-center">
+              <form className="flex gap-2 items-center" onSubmit={handleSubmitForm}>
+                <input type="text" name="email" placeholder="Email user ..."
+                       className="border px-3 py-2 rounded w-64 focus:outline-none focus:ring-2 focus:ring-blue-500"/>
+                <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Search
+                </button>
+              </form>
+
+              <button
+                className="flex items-center justify-center rounded-lg bg-green-500 hover:bg-green-600 px-6 py-2.5 text-white font-medium transition-colors duration-200 shadow-sm hover:shadow focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
+                onClick={() => onAdd()}
+              >
+                <Plus className="h-4 w-4 mr-1.5"/>
+                Create
+              </button>
+            </div>
           </div>
         </div>
         <UserTable users={users} loading={loading} onEdit={onEdit} onDelete={onDelete} errorMessage={errorMessage}/>

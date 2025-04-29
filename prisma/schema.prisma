@@ -25,6 +25,12 @@ enum Status {
   Cancelled
 }
 
+enum SeatClass {
+  Economy
+  Business
+  FirstClass
+}
+
 model User {
   id        Int      @id @default(autoincrement())
   uuid      String   @unique @default(uuid())
@@ -67,7 +73,7 @@ model Flights {
   kota_tujuan         String
   waktu_keberangkatan DateTime
   waktu_kedatangan    DateTime
-  harga               Decimal  @db.Decimal(10, 2)
+  // harga               Decimal  @db.Decimal(10, 2)
   kapasitas_kursi     Int
   kursi_tersedia      Int
   createdAt           DateTime @default(now())
@@ -75,6 +81,9 @@ model Flights {
 
   // relasi one-to-many dengan tbl_bookings
   bookings Booking[]
+
+  // Relasi one-to-many dengan seat classess
+  seatClasses Json
 
   // relasi one-to-many dengan tbl_airlines
   airlinesId Int
@@ -85,6 +94,7 @@ model Booking {
   id           Int      @id @default(autoincrement())
   uuid         String   @unique @default(uuid())
   jumlah_kursi Int
+  seatClass    String
   total_harga  Decimal  @db.Decimal(10, 2)
   status       Status   @default(Pending)
   createdAt    DateTime @default(now())
@@ -102,10 +112,22 @@ model Booking {
   user   User @relation(fields: [userId], references: [id])
 }
 
+// model SeatClassDetails {
+//   id        Int       @id @default(autoincrement())
+//   type SeatClass
+//   harga     Decimal   @db.Decimal(10, 2)
+//   isActive Boolean @default(true)
+//
+//   //   Relasi
+//   flightId Int
+//   flights Flights @relation(fields: [flightId], references: [id])
+// }
+
 model Payment {
   id                Int      @id @default(autoincrement())
   uuid              String   @unique @default(uuid())
   payment_method    String
+  seatClass         String
   jumlah_pembayaran Decimal  @db.Decimal(10, 2)
   status            Status   @default(Pending)
   createdAt         DateTime @default(now())
